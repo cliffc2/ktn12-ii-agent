@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String?  @unique
+  telegramId String?  @unique
+  tier       String   @default("free")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  apiKeys       ApiKey[]
+  swapOrders    SwapOrder[]
+  switches      DeadmanEntry[]
+  subscriptions Subscription[]
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  userId    String
+  tier      String   @default("free")
+  active    Boolean  @default(true)
+  reqCount  Int      @default(0)
+  reqLimit  Int      @default(100)
+  createdAt DateTime @default(now())
+
+  user  User       @relation(fields: [userId], references: [id])
+  usage ApiUsage[]
+}
+
+model SwapOrder {
+  id           String   @id @default(cuid())
+  userId       String?
+  direction    String
+  amount       Float
+  rate         Float    @default(0.00002)
+  fee          Float    @default(0)
+  feeRate      Float    @default(0.005)
+  hashlock     String?
+  preimage     String?
+  htlcAddress  String?
+  counterparty String   @default("")
+  timelock     Int?
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model DeadmanEntry {
+  id            String   @id @default(cuid())
+  userId        String?
+  label         String   @default("Default Switch")
+  owner         String
+  beneficiary   String
+  amount        Float    @default(0)
+  timeout       Int      @default(600)
+  gracePeriod   Int      @default(60)
+  lastHeartbeat DateTime @default(now())
+  status        String   @default("active")
+  tier          String   @default("basic")
+  notifyEmail   String?
+  notifyWebhook String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model ArbitrageTrade {
+  id           String   @id @default(cuid())
+  buyExchange  String
+  sellExchange String
+  pair         String   @default("KAS/USDT")
+  buyPrice     Float
+  sellPrice    Float
+  spread       Float
+  amount       Float
+  profit       Float
+  status       String   @default("detected")
+  createdAt    DateTime @default(now())
+}
+
+model AgentTask {
+  id          String    @id @default(cuid())
+  type        String
+  payload     String
+  status      String    @default("pending")
+  result      String?
+  priority    Int       @default(0)
+  attempts    Int       @default(0)
+  maxRetries  Int       @default(3)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model AgentLog {
+  id        String   @id @default(cuid())
+  level     String
+  category  String
+  message   String
+  data      String?
+  createdAt DateTime @default(now())
+}
+
+model ApiUsage {
+  id           String   @id @default(cuid())
+  apiKeyId     String
+  endpoint     String
+  method       String
+  statusCode   Int
+  responseTime Int
+  createdAt    DateTime @default(now())
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id])
+}
+
+model Treasury {
+  id        String   @id @default(cuid())
+  currency  String
+  balance   Float    @default(0)
+  type      String
+  address   String   @default("")
+  updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  tier      String
+  status    String   @default("active")
+  amount    Float
+  currency  String   @default("USD")
+  startDate DateTime @default(now())
+  endDate   DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model PriceFeed {
+  id        String   @id @default(cuid())
+  exchange  String
+  pair      String
+  price     Float
+  volume    Float?
+  timestamp DateTime @default(now())
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
