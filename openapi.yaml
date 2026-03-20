@@ -1,0 +1,301 @@
+openapi: 3.0.3
+info:
+  title: Kaspa TN12 Dashboard API
+  version: 1.0.0
+  description: Backend API for Kaspa Testnet 12 Dashboard with Atomic Swaps and Deadman Switch
+
+paths:
+  /api/network/info:
+    get:
+      summary: Get network info from public TN12 API
+      responses:
+        '200':
+          description: Network info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blockCount: { type: number }
+                  headerCount: { type: number }
+                  difficulty: { type: number }
+                  networkName: { type: string }
+                  virtualDaaScore: { type: number }
+
+  /api/wallet/balance:
+    get:
+      summary: Get wallet balance from public API
+      parameters:
+        - name: address
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Balance info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance: { type: number }
+                  pending: { type: number }
+
+  /api/wallet/utxos:
+    get:
+      summary: Get UTXOs for an address
+      parameters:
+        - name: address
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: UTXO list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /api/atomic-swap/initiate:
+    post:
+      summary: Initiate an atomic swap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [direction, amount]
+              properties:
+                direction: { type: string, enum: [kas2eth, eth2kas] }
+                kasAddress: { type: string }
+                amount: { type: number }
+                timelock: { type: number }
+                rate: { type: number }
+                counterparty: { type: string }
+      responses:
+        '200':
+          description: Swap initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  swapId: { type: string }
+                  preimage: { type: string }
+                  hashlock: { type: string }
+                  htlcAddress: { type: string }
+                  timelock: { type: number }
+                  status: { type: string }
+
+  /api/atomic-swap/claim:
+    post:
+      summary: Claim an atomic swap with preimage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [swapId, preimage]
+              properties:
+                swapId: { type: string }
+                preimage: { type: string }
+      responses:
+        '200':
+          description: Swap claimed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+
+  /api/atomic-swap/refund:
+    post:
+      summary: Refund an atomic swap after timelock expiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [swapId]
+              properties:
+                swapId: { type: string }
+      responses:
+        '200':
+          description: Swap refunded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+
+  /api/atomic-swap/list:
+    get:
+      summary: List all swaps
+      responses:
+        '200':
+          description: Active swaps
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  swaps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        direction: { type: string }
+                        amount: { type: number }
+                        status: { type: string }
+                        htlcAddress: { type: string }
+                        hashlock: { type: string }
+                        timelock: { type: number }
+                        created: { type: number }
+
+  /api/atomic-swap/intent:
+    post:
+      summary: Parse AI agent natural language intent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [intent]
+              properties:
+                intent: { type: string }
+      responses:
+        '200':
+          description: Parsed intent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  action: { type: string }
+                  details: { type: object }
+
+  /api/deadman/status:
+    get:
+      summary: Get deadman switch status and countdown
+      responses:
+        '200':
+          description: Deadman switch status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [active, grace, expired, unconfigured] }
+                  remaining: { type: number }
+                  graceRemaining: { type: number }
+                  lastHeartbeat: { type: string }
+                  timeoutPeriod: { type: number }
+                  gracePeriod: { type: number }
+                  contractAddress: { type: string }
+                  beneficiary: { type: string }
+
+  /api/deadman/heartbeat:
+    post:
+      summary: Send heartbeat to reset deadman switch timer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key: { type: string }
+      responses:
+        '200':
+          description: Heartbeat received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  remaining: { type: number }
+
+  /api/deadman/configure:
+    post:
+      summary: Configure deadman switch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contractAddress: { type: string }
+                beneficiary: { type: string }
+                timeoutPeriod: { type: number }
+                gracePeriod: { type: number }
+                ownerKey: { type: string }
+      responses:
+        '200':
+          description: Configuration saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+
+  /api/contracts/compile:
+    post:
+      summary: Compile a SilverScript contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contractType]
+              properties:
+                contractType: { type: string }
+                args: { type: object }
+      responses:
+        '200':
+          description: Compiled contract
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  contractName: { type: string }
+                  scriptHex: { type: string }
+                  address: { type: string }
+
+  /api/rpc:
+    post:
+      summary: Proxy RPC call to TN12 API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [method]
+              properties:
+                method: { type: string }
+                params: { type: object }
+      responses:
+        '200':
+          description: RPC response
+          content:
+            application/json:
+              schema:
+                type: object

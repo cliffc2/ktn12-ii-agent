@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 3%;
+    --foreground: 0 0% 88%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 88%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 88%;
+    --primary: 155 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 200 100% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 155 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 10%;
+    --input: 0 0% 8%;
+    --ring: 155 100% 50%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 3%;
+    --foreground: 0 0% 88%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 88%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 88%;
+    --primary: 155 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 200 100% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 155 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 10%;
+    --input: 0 0% 8%;
+    --ring: 155 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px hsl(155 100% 50% / 0.3); }
+  50% { box-shadow: 0 0 20px hsl(155 100% 50% / 0.6); }
+}
+
+.glow-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(hsl(0 0% 8% / 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(0 0% 8% / 0.5) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.text-glow {
+  text-shadow: 0 0 10px hsl(155 100% 50% / 0.5);
+}
