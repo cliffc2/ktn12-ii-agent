@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import crypto from "crypto";
 
 export const ESCROW_NETWORK = "testnet-12";
 export const ESCROW_API = process.env.ESCROW_API_URL || "http://localhost:3000";
