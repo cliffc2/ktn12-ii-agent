@@ -6,6 +6,7 @@ import NetworkStatus from "@/components/NetworkStatus";
 import RPCTester from "@/components/RPCTester";
 import ServiceControl from "@/components/ServiceControl";
 import WalletCard from "@/components/WalletCard";
+import { Settings } from "lucide-react";
 
 export default function Home() {
   return (
@@ -61,6 +62,14 @@ export default function Home() {
               <span className="text-[hsl(0_0%_40%)]">BPS </span>
               <span className="text-amber-400 font-bold">10</span>
             </div>
+            <a
+              data-design-id="header-admin-link"
+              href="/admin"
+              className="flex items-center gap-2 px-3 py-1.5 bg-[hsl(0_0%_5%)] border border-[hsl(0_0%_10%)] rounded text-[10px] hover:border-violet-400/50 transition-colors"
+            >
+              <Settings className="w-3 h-3 text-violet-400" />
+              <span className="text-[hsl(0_0%_40%)]">Admin</span>
+            </a>
           </div>
         </header>
 
