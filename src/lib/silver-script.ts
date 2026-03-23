@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import crypto from "crypto";
 
 const OPCODES: Record<string, number> = {
   OP_0: 0x00,
