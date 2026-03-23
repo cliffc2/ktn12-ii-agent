@@ -1,6 +1,20 @@
 import crypto from "node:crypto";
 import { broadcastTransaction, getCurrentDaa, getUtxos } from "./escrow";
 
+/**
+ * KASPA HTLC Transaction Builder
+ *
+ * Notes on rusty-kaspa tn12 fixes (Mar 2026):
+ * - BIP-62 #911: Fixed misinterpretation of script data pushes
+ *   - Pushing 1-byte 0x00 must use OP_DATA1 (not OP_0)
+ *   - Pushing 1-byte 0x01-0x10 uses OP_1 through OP_16
+ *   - Pushing data > 75 bytes uses OP_PUSHDATA4
+ * - Related: #912 - Use OP_SMALL_INT_MIN_VAL for small int checks
+ * - Related: #885 - Covenant genesis ID computation API added
+ *
+ * These fixes ensure HTLC scripts comply with Kaspa's script validation.
+ */
+
 const KASPA_API = "https://api-tn12.kaspa.org";
 
 export interface KaspaUtxo {
@@ -29,6 +43,46 @@ export interface SigningKey {
 
 const DUST_THRESHOLD = 1000;
 const DEFAULT_FEE_PER_KB = 1000;
+const OP_SMALL_INT_MAX_VAL = 16;
+
+/**
+ * BIP-62 compliant data push
+ * Based on rusty-kaspa fix #911:
+ * - Empty data: OP_0
+ * - 1 byte 0x00: OP_DATA1 0x00 (NOT OP_0)
+ * - 1 byte 0x01-0x10: OP_1 through OP_16
+ * - 1 byte 0x11-0xff: OP_DATA1
+ * - 2-75 bytes: OP_DATA{2-75}
+ * - 76+ bytes: OP_PUSHDATA4
+ */
+export function pushData(data: string): string {
+  if (data.length === 0) return "OP_0";
+
+  const len = data.length / 2; // hex string to bytes
+
+  if (len === 1) {
+    const byte = Number.parseInt(data.slice(0, 2), 16);
+    if (byte === 0) return "OP_DATA1 0x00"; // BIP-62 fix: 0x00 must use OP_DATA1
+    if (byte >= 1 && byte <= OP_SMALL_INT_MAX_VAL)
+      return `OP_${"123456789ABCDEF".slice(byte - 1, byte)}`;
+    return `OP_DATA1 ${data.slice(0, 2)}`;
+  }
+
+  if (len >= 2 && len <= 75) return `OP_DATA${len} ${data}`;
+  if (len > 75)
+    return `OP_PUSHDATA4 ${len.toString(16).padStart(8, "0")} ${data}`;
+
+  return data;
+}
+
+/**
+ * Push a preimage (32 bytes) for HTLC claim
+ * Per BIP-62: 32 bytes uses OP_PUSHDATA4 since > 75 bytes
+ */
+export function pushPreimage(preimage: string): string {
+  const len = preimage.length / 2;
+  return `OP_PUSHDATA4 ${len.toString(16).padStart(8, "0")} ${preimage}`;
+}
 
 export function createP2PKHLockScript(pubkeyHash: string): string {
   return `OP_DUP OP_HASH160 ${pubkeyHash} OP_EQUALVERIFY OP_CHECKSIG`;
@@ -94,11 +148,13 @@ export function buildReleaseTransaction(
   sellerAddress: string,
   fee: number,
 ): { tx: string; txId: string } {
+  // Use BIP-62 compliant preimage push (32 bytes > 75, so OP_PUSHDATA4)
+  const releaseScript = `${pushPreimage(preimage)} ${escrowScript}`;
   const txVersion = 1;
   const txIns = [
     {
       previousOutput: input.txId,
-      signatureScript: `${preimage} ${escrowScript}`,
+      signatureScript: releaseScript,
       sequence: 0xffffffff,
     },
   ];
@@ -125,11 +181,13 @@ export function buildRefundTransaction(
   timelock: number,
   fee: number,
 ): { tx: string; txId: string } {
+  // BIP-62 fix: Use OP_0 (empty) for refund branch, not "00" literal
+  const refundScript = `OP_0 ${escrowScript}`;
   const txVersion = 1;
   const txIns = [
     {
       previousOutput: input.txId,
-      signatureScript: `00 ${escrowScript}`,
+      signatureScript: refundScript,
       sequence: timelock,
     },
   ];
